@@ -178,6 +178,7 @@ extern "C" {
 #endif
 typedef unsigned char lexer_byte;
 typedef LEXER_SIZE_TYPE lexer_size;
+typedef size_t wby_size;
 
 /* ---------------------------------------------------------------
  *                      PUNCTUATION
@@ -260,7 +261,9 @@ enum lexer_token_type {
     LEXER_TOKEN_NAME,
     /* names and keyword */
     LEXER_TOKEN_PUNCTUATION
-    /* punctuation from the punctuation table */
+    /* punctuation from the punctuation table */,
+    LEXER_TOKEN_EOF
+    /* End of file/string */
 };
 
 /* token subtype flags */
@@ -296,6 +299,8 @@ struct lexer_token {
     /* text pointer to the beginning of the token inside the text */
     lexer_size len;
     /* byte length of the token */
+	struct lexer_token* next;
+	/* next token */
 };
 
 LEXER_API lexer_size lexer_token_cpy(char*, lexer_size max, const struct lexer_token*);
@@ -1315,6 +1320,9 @@ lexer_read(struct lexer *lexer, struct lexer_token *token)
     } else if ((c == '/' || c == '\\') || c == '.') {
         if (!lexer_read_name(lexer, token))
             return 0;
+    } else if (c == 0) {
+		token->type = LEXER_TOKEN_EOF;
+    	return 0;
     } else if (!lexer_read_punctuation(lexer, token)) {
         if (lexer->log) {
             lexer->log(lexer->userdata, LEXER_ERROR, lexer->line,
